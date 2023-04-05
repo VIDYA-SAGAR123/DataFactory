@@ -1,0 +1,9 @@
+{
+	"name": "sagar-demo-df",
+	"location": "southindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "ee9ee8d4-dcc1-416b-b6fe-e9e001cca36e",
+		"tenantId": "34a4b4cb-efce-4be3-9354-8b33cd86ad2d"
+	}
+}

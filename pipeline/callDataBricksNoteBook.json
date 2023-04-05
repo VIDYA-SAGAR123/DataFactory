@@ -1,0 +1,262 @@
+{
+	"name": "callDataBricksNoteBook",
+	"properties": {
+		"activities": [
+			{
+				"name": "Notebook1",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "SQL_Table_Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/vidya.pro9@gmail.com/Trigger ADF Realtime",
+					"baseParameters": {
+						"table": {
+							"value": "@variables('sqlTableName')",
+							"type": "Expression"
+						},
+						"outputPath": {
+							"value": "@variables('Output_location')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureDatabricks1",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Output_location",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Output_location",
+					"value": {
+						"value": "@concat('/mnt/sagaradls/empout_',formatDateTime(utcnow(),'yyyyMMddHHmmss'))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SQL_Table_Name",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Output_location",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "sqlTableName",
+					"value": "dbo.Person"
+				}
+			},
+			{
+				"name": "RecordCount",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Notebook1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Record_Count",
+					"value": {
+						"value": "@string(activity('Notebook1').output.runOutput)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "RecordCount",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"additionalColumns": [
+							{
+								"name": "Pipeline_Name",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "Table_Name",
+								"value": {
+									"value": "@variables('sqlTableName')",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "Output_location",
+								"value": {
+									"value": "@variables('Output_location')",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "Processed_Time",
+								"value": {
+									"value": "@utcnow()",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "Record_Count",
+								"value": {
+									"value": "@variables('Record_Count')",
+									"type": "Expression"
+								}
+							}
+						],
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "Pipeline_Name",
+									"type": "String"
+								},
+								"sink": {
+									"name": "pipelineName",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Table_Name",
+									"type": "String"
+								},
+								"sink": {
+									"name": "TableNAAME",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Output_location",
+									"type": "String"
+								},
+								"sink": {
+									"name": "OutputLocation",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Processed_Time",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ProcessedTime",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Record_Count",
+									"type": "String"
+								},
+								"sink": {
+									"name": "RecordCount",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DelimitedText3",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "sqlLogTable",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"variables": {
+			"Output_location": {
+				"type": "String"
+			},
+			"sqlTableName": {
+				"type": "String"
+			},
+			"Record_Count": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-04-05T09:12:04Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

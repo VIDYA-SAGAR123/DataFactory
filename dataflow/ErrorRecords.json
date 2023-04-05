@@ -1,0 +1,79 @@
+{
+	"name": "ErrorRecords",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ErrorRecord",
+						"type": "DatasetReference"
+					},
+					"name": "source1Blob"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlTable4",
+						"type": "DatasetReference"
+					},
+					"name": "sink1AzureSQLTable1"
+				},
+				{
+					"dataset": {
+						"referenceName": "AzureSqlTable5",
+						"type": "DatasetReference"
+					},
+					"name": "sink2AzSQLTable2"
+				}
+			],
+			"transformations": [
+				{
+					"name": "split1"
+				},
+				{
+					"name": "FileName"
+				},
+				{
+					"name": "FileNameGood"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          {D.O.B} as string,",
+				"          Name as string,",
+				"          Salary as string,",
+				"          Gender as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1Blob",
+				"source1Blob split(isNull(toDate({D.O.B},'dd-MMM-yyyy')),",
+				"     disjoint: false) ~> split1@(ErrorRecords, GoodRecords)",
+				"split1@ErrorRecords derive(FileType = 'ErrorRecord.csv') ~> FileName",
+				"split1@GoodRecords derive(FileType = 'ErrorRecord.csv') ~> FileNameGood",
+				"FileName sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1AzureSQLTable1",
+				"FileNameGood sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink2AzSQLTable2"
+			]
+		}
+	}
+}
